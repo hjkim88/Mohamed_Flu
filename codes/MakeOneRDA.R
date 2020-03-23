@@ -39,6 +39,10 @@ makeRDA <- function(cytokine_file_path="./data/Copy of FLU09 Cytokines_season 20
   cyto_sample <- read.xlsx2(file = sample_info_file_path, sheetIndex = 1,
                             stringsAsFactors = FALSE, check.names = FALSE)
   
+  ### change IL17A in cyto_nw to IL17
+  ### they are the same thing but for consistency
+  colnames(cyto_nw)[which(colnames(cyto_nw) == "IL17A")] <- "IL17"
+  
   ### remove empty rows in the sample info
   cyto_sample <- cyto_sample[which(cyto_sample$ID != ""),]
   

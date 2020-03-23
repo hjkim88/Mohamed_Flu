@@ -48,13 +48,13 @@ makeRDA <- function(cytokine_file_path="./data/Copy of FLU09 Cytokines_season 20
   ### set README function
   README <- function() {
     writeLines(paste(rep("#", 100), collapse = ""))
+    writeLines("The \"cyto_nw\" are cytokine levels data from nasal wash.")
+    writeLines("The \"cyto_plasma\" are cytokine levels data from PBMC.")
+    writeLines("Each patient has some samples that were taken at different time points.")
+    writeLines("The \"cyto_sample\" has the patient information.")
     writeLines("")
-    writeLines("")
-    writeLines("")
-    writeLines("")
-    writeLines("")
-    writeLines("")
-    writeLines("")
+    writeLines("The original data is from Mohamed Ghonim (Mohamed.Ghonim@STJUDE.ORG),")
+    writeLines("and is combined into this one RDA file by Hyunjin Kim (Hyunjin.Kim@STJUDE.ORG).")
     writeLines(paste(rep("#", 100), collapse = ""))
   }
   

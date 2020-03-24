@@ -49,6 +49,12 @@ makeRDA <- function(cytokine_file_path="./data/Copy of FLU09 Cytokines_season 20
   ### set ID as the row names
   rownames(cyto_sample) <- cyto_sample$ID
   
+  ### change column names to syntactically valid names
+  colnames(cyto_nw) <- make.names(colnames(cyto_nw))
+  colnames(cyto_plasma) <- make.names(colnames(cyto_plasma))
+  colnames(cyto_sample) <- make.names(colnames(cyto_sample))
+  
+  
   ### set README function
   README <- function() {
     writeLines(paste(rep("#", 100), collapse = ""))

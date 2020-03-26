@@ -14,7 +14,7 @@
 #               3. a) Line graph per each cytokine. The x-axis is time points and the y-axis is
 #                     cytokine level. Color the graphs based on Asthma/IV vs IV, so that we can
 #                     distinguish them in the plot.
-#                  b) Line graph per each cytokine. Take mean of each time point and compare
+#                  b) Line graph per each cytokine. Take mean/median of each time point and compare
 #                     Asthma/IV vs IV. There would be only two lines in each graph.
 #               4. Statistics table. For each time point, calculate mean/median difference
 #                  between Asthma/IV vs IV, and perform t-test and one-way ANOVA to get p-values.
@@ -76,9 +76,6 @@ flu09_analysis1 <- function(data_path="./data/flu09_cytokine.rda",
                      "IL15",
                      "IL17")
   
-  
-  ### 1. Explore the data set.
-  
   ### clinical factors to be tested
   ### must be in colnames(cyto_sample)
   factor_list <- c("FLU.Strain.Designation",
@@ -135,9 +132,40 @@ flu09_analysis1 <- function(data_path="./data/flu09_cytokine.rda",
     }
   }
   
+  ### annotate additional info - IV+/Resp+, IV+/Resp-, IV-/Resp+, IV-/Resp-
+  plot_df_nw$IV.Resp <- sapply(1:nrow(plot_df_nw), function(x) {
+    if(plot_df_nw[x,"FLU.Strain.Designation"] == "Negative" && plot_df_nw[x,"Respiratory.Disease"] == "Yes") {
+      return("IV-/Resp+")
+    } else if(plot_df_nw[x,"FLU.Strain.Designation"] == "Negative" && plot_df_nw[x,"Respiratory.Disease"] == "No") {
+      return("IV-/Resp-")
+    } else if(plot_df_nw[x,"FLU.Strain.Designation"] != "Negative" && plot_df_nw[x,"Respiratory.Disease"] == "Yes") {
+      return("IV+/Resp+")
+    } else if(plot_df_nw[x,"FLU.Strain.Designation"] != "Negative" && plot_df_nw[x,"Respiratory.Disease"] == "No"){
+      return("IV+/Resp-")
+    } else {
+      return(NA)
+    }
+  })
+  plot_df_ps$IV.Resp <- sapply(1:nrow(plot_df_ps), function(x) {
+    if(plot_df_ps[x,"FLU.Strain.Designation"] == "Negative" && plot_df_ps[x,"Respiratory.Disease"] == "Yes") {
+      return("IV-/Resp+")
+    } else if(plot_df_ps[x,"FLU.Strain.Designation"] == "Negative" && plot_df_ps[x,"Respiratory.Disease"] == "No") {
+      return("IV-/Resp-")
+    } else if(plot_df_ps[x,"FLU.Strain.Designation"] != "Negative" && plot_df_ps[x,"Respiratory.Disease"] == "Yes") {
+      return("IV+/Resp+")
+    } else if(plot_df_ps[x,"FLU.Strain.Designation"] != "Negative" && plot_df_ps[x,"Respiratory.Disease"] == "No"){
+      return("IV+/Resp-")
+    } else {
+      return(NA)
+    }
+  })
+  
+  
+  ### 1. Explore the data set.
+  
   ### if discrete: make beeswarm plots
   ### if continous: make correlation plots
-  for(factor in factor_list) {
+  for(factor in c(factor_list, "IV.Resp")) {
     
     ### create result directory
     outDir <- paste0(output_dir, "1_Explore/", factor, "/")
@@ -206,7 +234,7 @@ flu09_analysis1 <- function(data_path="./data/flu09_cytokine.rda",
       ### arrange the plots and print out
       fName <- paste0("Correlation_Plot_NW_TH2_", factor)
       g <- arrangeGrob(grobs = p,
-                       layout_matrix = rbind(c(1, 2, 3, 4), c(5, 6, 7, 8)),
+                       layout_matrix = rbind(c(1, 2, 3), c(4, 5, 6), c(7, 8, 9)),
                        top = fName)
       ggsave(file = paste0(outDir, fName, ".png"), g, width = 22, height = 12)
       
@@ -271,7 +299,7 @@ flu09_analysis1 <- function(data_path="./data/flu09_cytokine.rda",
       ### arrange the plots and print out
       fName <- paste0("Correlation_Plot_PS_TH2_", factor)
       g <- arrangeGrob(grobs = p,
-                       layout_matrix = rbind(c(1, 2, 3, 4), c(5, 6, 7, 8)),
+                       layout_matrix = rbind(c(1, 2, 3), c(4, 5, 6), c(7, 8, 9)),
                        top = fName)
       ggsave(file = paste0(outDir, fName, ".png"), g, width = 22, height = 12)
       
@@ -344,7 +372,7 @@ flu09_analysis1 <- function(data_path="./data/flu09_cytokine.rda",
       ### arrange the plots and print out
       fName <- paste0("Beeswarm_Plot_NW_TH2_", factor)
       g <- arrangeGrob(grobs = p,
-                       layout_matrix = rbind(c(1, 2, 3, 4), c(5, 6, 7, 8)),
+                       layout_matrix = rbind(c(1, 2, 3), c(4, 5, 6), c(7, 8, 9)),
                        top = fName)
       ggsave(file = paste0(outDir, fName, ".png"), g, width = 22, height = 12)
       
@@ -368,7 +396,7 @@ flu09_analysis1 <- function(data_path="./data/flu09_cytokine.rda",
       ### arrange the plots and print out
       fName <- paste0("Beeswarm_Plot_NW_TH2_Q1-Q3_", factor)
       g <- arrangeGrob(grobs = p,
-                       layout_matrix = rbind(c(1, 2, 3, 4), c(5, 6, 7, 8)),
+                       layout_matrix = rbind(c(1, 2, 3), c(4, 5, 6), c(7, 8, 9)),
                        top = fName)
       ggsave(file = paste0(outDir, fName, ".png"), g, width = 22, height = 12)
       
@@ -439,7 +467,7 @@ flu09_analysis1 <- function(data_path="./data/flu09_cytokine.rda",
       ### arrange the plots and print out
       fName <- paste0("Beeswarm_Plot_PS_TH2_", factor)
       g <- arrangeGrob(grobs = p,
-                       layout_matrix = rbind(c(1, 2, 3, 4), c(5, 6, 7, 8)),
+                       layout_matrix = rbind(c(1, 2, 3), c(4, 5, 6), c(7, 8, 9)),
                        top = fName)
       ggsave(file = paste0(outDir, fName, ".png"), g, width = 22, height = 12)
       
@@ -463,7 +491,7 @@ flu09_analysis1 <- function(data_path="./data/flu09_cytokine.rda",
       ### arrange the plots and print out
       fName <- paste0("Beeswarm_Plot_PS_TH2_Q1-Q3_", factor)
       g <- arrangeGrob(grobs = p,
-                       layout_matrix = rbind(c(1, 2, 3, 4), c(5, 6, 7, 8)),
+                       layout_matrix = rbind(c(1, 2, 3), c(4, 5, 6), c(7, 8, 9)),
                        top = fName)
       ggsave(file = paste0(outDir, fName, ".png"), g, width = 22, height = 12)
       
@@ -604,7 +632,7 @@ flu09_analysis1 <- function(data_path="./data/flu09_cytokine.rda",
   }
   
   ### make PCA plots
-  for(factor in setdiff(c(factor_list, "Study.Day"), "Age.at.Enrollment")) {
+  for(factor in setdiff(c(factor_list, "Study.Day", "IV.Resp"), "Age.at.Enrollment")) {
     
     ### create result directory
     outDir <- paste0(output_dir, "2_PCA/", factor, "/")
@@ -644,6 +672,225 @@ flu09_analysis1 <- function(data_path="./data/flu09_cytokine.rda",
   
   
   ### 3. a) Line graph with all the samples
+  
+  ### make the line graphs
+  for(factor in setdiff(c(factor_list, "IV.Resp"), "Age.at.Enrollment")) {
+    
+    ### create result directory
+    outDir <- paste0(output_dir, "3a_Line_Graph/", factor, "/")
+    dir.create(path = outDir, showWarnings = FALSE, recursive = TRUE)
+    
+    ### NW
+    
+    ### TH1 cytokines only
+    p <- vector("list", length = length(th1_cytokines))
+    names(p) <- th1_cytokines
+    
+    ### line graph per cytokine
+    for(cytokine in th1_cytokines) {
+      p[[cytokine]] <- ggplot(plot_df_nw, aes_string(x="Study.Day", y=cytokine, group="ID")) +
+                        geom_line(aes_string(color=factor), size=1.5, alpha=0.5) +
+                        theme_classic(base_size = 16)
+    }
+    
+    ### arrange the plots and print out
+    fName <- paste0("Line_Plot_NW_TH1_", factor)
+    g <- arrangeGrob(grobs = p,
+                     layout_matrix = rbind(c(1, 2, 3, 4), c(5, 6, 7, 8), c(9, 10, 11, 12)),
+                     top = fName)
+    ggsave(file = paste0(outDir, fName, ".png"), g, width = 24, height = 12)
+    
+    ### because of the outliers, the plot can look messy
+    ### therefore, only using q1-q3 data
+    ### line graph per cytokine
+    for(cytokine in th1_cytokines) {
+      q <- quantile(plot_df_nw[,cytokine], na.rm = TRUE)
+      
+      p[[cytokine]] <- ggplot(plot_df_nw[intersect(which(plot_df_nw[,cytokine] >= q[2]),
+                                                   which(plot_df_nw[,cytokine] <= q[3])),],
+                              aes_string(x="Study.Day", y=cytokine, group="ID")) +
+                          geom_line(aes_string(color=factor), size=1.5, alpha=0.5) +
+                          theme_classic(base_size = 16)
+    }
+    
+    ### arrange the plots and print out
+    fName <- paste0("Line_Plot_NW_TH1_Q1-Q3_", factor)
+    g <- arrangeGrob(grobs = p,
+                     layout_matrix = rbind(c(1, 2, 3, 4), c(5, 6, 7, 8), c(9, 10, 11, 12)),
+                     top = fName)
+    ggsave(file = paste0(outDir, fName, ".png"), g, width = 22, height = 12)
+    
+    ### TH2 cytokines only
+    p <- vector("list", length = length(th2_cytokines))
+    names(p) <- th2_cytokines
+    
+    ### line graph per cytokine
+    for(cytokine in th2_cytokines) {
+      p[[cytokine]] <- ggplot(plot_df_nw, aes_string(x="Study.Day", y=cytokine, group="ID")) +
+        geom_line(aes_string(color=factor), size=1.5, alpha=0.5) +
+        theme_classic(base_size = 16)
+    }
+    
+    ### arrange the plots and print out
+    fName <- paste0("Line_Plot_NW_TH2_", factor)
+    g <- arrangeGrob(grobs = p,
+                     layout_matrix = rbind(c(1, 2, 3), c(4, 5, 6), c(7, 8, 9)),
+                     top = fName)
+    ggsave(file = paste0(outDir, fName, ".png"), g, width = 24, height = 12)
+    
+    ### because of the outliers, the plot can look messy
+    ### therefore, only using q1-q3 data
+    ### line graph per cytokine
+    for(cytokine in th2_cytokines) {
+      q <- quantile(plot_df_nw[,cytokine], na.rm = TRUE)
+      
+      p[[cytokine]] <- ggplot(plot_df_nw[intersect(which(plot_df_nw[,cytokine] >= q[2]),
+                                                   which(plot_df_nw[,cytokine] <= q[3])),],
+                              aes_string(x="Study.Day", y=cytokine, group="ID")) +
+        geom_line(aes_string(color=factor), size=1.5, alpha=0.5) +
+        theme_classic(base_size = 16)
+    }
+    
+    ### arrange the plots and print out
+    fName <- paste0("Line_Plot_NW_TH2_Q1-Q3_", factor)
+    g <- arrangeGrob(grobs = p,
+                     layout_matrix = rbind(c(1, 2, 3), c(4, 5, 6), c(7, 8, 9)),
+                     top = fName)
+    ggsave(file = paste0(outDir, fName, ".png"), g, width = 22, height = 12)
+    
+    
+    ### Plasma
+    
+    ### TH1 cytokines only
+    p <- vector("list", length = length(th1_cytokines))
+    names(p) <- th1_cytokines
+    
+    ### line graph per cytokine
+    for(cytokine in th1_cytokines) {
+      p[[cytokine]] <- ggplot(plot_df_ps, aes_string(x="Study.Day", y=cytokine, group="ID")) +
+        geom_line(aes_string(color=factor), size=1.5, alpha=0.5) +
+        theme_classic(base_size = 16)
+    }
+    
+    ### arrange the plots and print out
+    fName <- paste0("Line_Plot_PS_TH1_", factor)
+    g <- arrangeGrob(grobs = p,
+                     layout_matrix = rbind(c(1, 2, 3, 4), c(5, 6, 7, 8), c(9, 10, 11, 12)),
+                     top = fName)
+    ggsave(file = paste0(outDir, fName, ".png"), g, width = 24, height = 12)
+    
+    ### because of the outliers, the plot can look messy
+    ### therefore, only using q1-q3 data
+    ### line graph per cytokine
+    for(cytokine in th1_cytokines) {
+      q <- quantile(plot_df_ps[,cytokine], na.rm = TRUE)
+      
+      p[[cytokine]] <- ggplot(plot_df_ps[intersect(which(plot_df_ps[,cytokine] >= q[2]),
+                                                   which(plot_df_ps[,cytokine] <= q[3])),],
+                              aes_string(x="Study.Day", y=cytokine, group="ID")) +
+        geom_line(aes_string(color=factor), size=1.5, alpha=0.5) +
+        theme_classic(base_size = 16)
+    }
+    
+    ### arrange the plots and print out
+    fName <- paste0("Line_Plot_PS_TH1_Q1-Q3_", factor)
+    g <- arrangeGrob(grobs = p,
+                     layout_matrix = rbind(c(1, 2, 3, 4), c(5, 6, 7, 8), c(9, 10, 11, 12)),
+                     top = fName)
+    ggsave(file = paste0(outDir, fName, ".png"), g, width = 22, height = 12)
+    
+    ### TH2 cytokines only
+    p <- vector("list", length = length(th2_cytokines))
+    names(p) <- th2_cytokines
+    
+    ### line graph per cytokine
+    for(cytokine in th2_cytokines) {
+      p[[cytokine]] <- ggplot(plot_df_ps, aes_string(x="Study.Day", y=cytokine, group="ID")) +
+        geom_line(aes_string(color=factor), size=1.5, alpha=0.5) +
+        theme_classic(base_size = 16)
+    }
+    
+    ### arrange the plots and print out
+    fName <- paste0("Line_Plot_PS_TH2_", factor)
+    g <- arrangeGrob(grobs = p,
+                     layout_matrix = rbind(c(1, 2, 3), c(4, 5, 6), c(7, 8, 9)),
+                     top = fName)
+    ggsave(file = paste0(outDir, fName, ".png"), g, width = 24, height = 12)
+    
+    ### because of the outliers, the plot can look messy
+    ### therefore, only using q1-q3 data
+    ### line graph per cytokine
+    for(cytokine in th2_cytokines) {
+      q <- quantile(plot_df_ps[,cytokine], na.rm = TRUE)
+      
+      p[[cytokine]] <- ggplot(plot_df_ps[intersect(which(plot_df_ps[,cytokine] >= q[2]),
+                                                   which(plot_df_ps[,cytokine] <= q[3])),],
+                              aes_string(x="Study.Day", y=cytokine, group="ID")) +
+        geom_line(aes_string(color=factor), size=1.5, alpha=0.5) +
+        theme_classic(base_size = 16)
+    }
+    
+    ### arrange the plots and print out
+    fName <- paste0("Line_Plot_PS_TH2_Q1-Q3_", factor)
+    g <- arrangeGrob(grobs = p,
+                     layout_matrix = rbind(c(1, 2, 3), c(4, 5, 6), c(7, 8, 9)),
+                     top = fName)
+    ggsave(file = paste0(outDir, fName, ".png"), g, width = 22, height = 12)
+    
+  }
+  
+  
+  ### 3. b) Line graph with mean/median for each group
+  
+  ### make the line graphs
+  for(factor in setdiff(c(factor_list, "IV.Resp"), "Age.at.Enrollment")) {
+    
+    ### create result directory
+    outDir <- paste0(output_dir, "3b_Line_Graph/", factor, "/")
+    dir.create(path = outDir, showWarnings = FALSE, recursive = TRUE)
+    
+    ### create mean/median data
+    row_names <- NULL
+    for(x in unique(plot_df_nw[,factor])) {
+      row_names <- c(row_names, paste0(x, "_", unique(plot_df_nw[which(plot_df_nw[,factor] == x),"Study.Day"])))
+    }
+    plot_df_nw_mean <- data.frame(matrix(0, length(row_names), length(c(th1_cytokines, th2_cytokines))))
+    rownames(plot_df_nw_mean) <- row_names
+    colnames(plot_df_nw_mean) <- c(th1_cytokines, th2_cytokines)
+    plot_df_nw_median <- data.frame(matrix(0, length(row_names), length(c(th1_cytokines, th2_cytokines))))
+    rownames(plot_df_nw_median) <- row_names
+    colnames(plot_df_nw_median) <- c(th1_cytokines, th2_cytokines)
+    for(x in unique(plot_df_nw[,factor])) {
+      for(y in unique(plot_df_nw[which(plot_df_nw[,factor] == x),"Study.Day"])) {
+        plot_df_nw_mean[paste0(x, "_", y),] <- apply(plot_df_nw[intersect(which(),
+                                                                          which()),
+                                                                c(th1_cytokines, th2_cytokines)], 2, sum)
+      }
+    }
+    
+    
+    ### NW
+    
+    ### TH1 cytokines only
+    p <- vector("list", length = length(th1_cytokines))
+    names(p) <- th1_cytokines
+    
+    ### line graph per cytokine
+    for(cytokine in th1_cytokines) {
+      p[[cytokine]] <- ggplot(plot_df_nw, aes_string(x="Study.Day", y=cytokine, group="ID")) +
+        geom_line(aes_string(color=factor), size=1.5, alpha=0.5) +
+        theme_classic(base_size = 16)
+    }
+    
+    ### arrange the plots and print out
+    fName <- paste0("Line_Plot_NW_TH1_", factor)
+    g <- arrangeGrob(grobs = p,
+                     layout_matrix = rbind(c(1, 2, 3, 4), c(5, 6, 7, 8), c(9, 10, 11, 12)),
+                     top = fName)
+    ggsave(file = paste0(outDir, fName, ".png"), g, width = 24, height = 12)
+    
+  }
+  
   
   
     

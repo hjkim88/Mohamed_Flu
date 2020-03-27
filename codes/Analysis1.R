@@ -94,6 +94,21 @@ flu09_analysis1 <- function(data_path="./data/flu09_cytokine.rda",
   ### data to be tested
   plot_df <- cyto_sample[,factor_list]
   
+  ### annotate additional info - IV+/Resp+, IV+/Resp-, IV-/Resp+, IV-/Resp-
+  plot_df$IV.Resp <- sapply(1:nrow(plot_df), function(x) {
+    if(plot_df[x,"FLU.Strain.Designation"] == "Negative" && plot_df[x,"Respiratory.Disease"] == "Yes") {
+      return("IV-/Resp+")
+    } else if(plot_df[x,"FLU.Strain.Designation"] == "Negative" && plot_df[x,"Respiratory.Disease"] == "No") {
+      return("IV-/Resp-")
+    } else if(plot_df[x,"FLU.Strain.Designation"] != "Negative" && plot_df[x,"Respiratory.Disease"] == "Yes") {
+      return("IV+/Resp+")
+    } else if(plot_df[x,"FLU.Strain.Designation"] != "Negative" && plot_df[x,"Respiratory.Disease"] == "No"){
+      return("IV+/Resp-")
+    } else {
+      return(NA)
+    }
+  })
+  
   # ### remove flu- samples since we are not interested in them in this analysis
   # plot_df <- plot_df[which(plot_df[,"FLU.Strain.Designation"] != "Negative"),]
   
@@ -101,6 +116,9 @@ flu09_analysis1 <- function(data_path="./data/flu09_cytokine.rda",
   plot_df[,"Age.at.Enrollment"] <- as.numeric(plot_df[,"Age.at.Enrollment"])
   cyto_nw[,"Study.Day"] <- as.numeric(cyto_nw[,"Study.Day"])
   cyto_plasma[,"Study.Day"] <- as.numeric(cyto_plasma[,"Study.Day"])
+  
+  ### N/A -> NA in Tobacco.Use
+  plot_df[which(plot_df[,"Tobacco.Use"] == "N/A"),"Tobacco.Use"] <- "NA"
   
   ### annotate clinical info to the cytokine level data
   plot_df_nw <- merge(cyto_nw[,c("ID", "Study.Day", th1_cytokines, th2_cytokines)], plot_df,
@@ -136,34 +154,6 @@ flu09_analysis1 <- function(data_path="./data/flu09_cytokine.rda",
       plot_df_ps <- plot_df_ps[-remove_ind,]
     }
   }
-  
-  ### annotate additional info - IV+/Resp+, IV+/Resp-, IV-/Resp+, IV-/Resp-
-  plot_df_nw$IV.Resp <- sapply(1:nrow(plot_df_nw), function(x) {
-    if(plot_df_nw[x,"FLU.Strain.Designation"] == "Negative" && plot_df_nw[x,"Respiratory.Disease"] == "Yes") {
-      return("IV-/Resp+")
-    } else if(plot_df_nw[x,"FLU.Strain.Designation"] == "Negative" && plot_df_nw[x,"Respiratory.Disease"] == "No") {
-      return("IV-/Resp-")
-    } else if(plot_df_nw[x,"FLU.Strain.Designation"] != "Negative" && plot_df_nw[x,"Respiratory.Disease"] == "Yes") {
-      return("IV+/Resp+")
-    } else if(plot_df_nw[x,"FLU.Strain.Designation"] != "Negative" && plot_df_nw[x,"Respiratory.Disease"] == "No"){
-      return("IV+/Resp-")
-    } else {
-      return(NA)
-    }
-  })
-  plot_df_ps$IV.Resp <- sapply(1:nrow(plot_df_ps), function(x) {
-    if(plot_df_ps[x,"FLU.Strain.Designation"] == "Negative" && plot_df_ps[x,"Respiratory.Disease"] == "Yes") {
-      return("IV-/Resp+")
-    } else if(plot_df_ps[x,"FLU.Strain.Designation"] == "Negative" && plot_df_ps[x,"Respiratory.Disease"] == "No") {
-      return("IV-/Resp-")
-    } else if(plot_df_ps[x,"FLU.Strain.Designation"] != "Negative" && plot_df_ps[x,"Respiratory.Disease"] == "Yes") {
-      return("IV+/Resp+")
-    } else if(plot_df_ps[x,"FLU.Strain.Designation"] != "Negative" && plot_df_ps[x,"Respiratory.Disease"] == "No"){
-      return("IV+/Resp-")
-    } else {
-      return(NA)
-    }
-  })
   
   
   ### 1. Explore the data set
@@ -1269,7 +1259,7 @@ flu09_analysis1 <- function(data_path="./data/flu09_cytokine.rda",
         Fill(foregroundColor="red",
              pattern="SOLID_FOREGROUND")
       ### indicies for < 0.05
-      ind <- which(mat[grep("Pval", rownames(mat)),] < 0.05, arr.ind = TRUE)
+      ind <- which(mat[grep("Pval", rownames(mat)),,drop=FALSE] < 0.05, arr.ind = TRUE)
       if(nrow(ind) > 0) {
         ind[,1] <- ind[,1]*2 + ind[,1] %% 2
         ### set red

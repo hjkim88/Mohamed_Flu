@@ -9,15 +9,17 @@
 #                  and various clinical factors. This includes the plot per cytokine to put
 #                  all the samples to compare Asthma/IV and IV. Different time points are
 #                  painted with different colored dots.
-#               2. PCA. Mark with Asthma info and with time point info to see
-#                  if the samples are clustered well.
+#               2. PCA. Mark with Asthma info (plus other clinical factors) and with
+#                  time point info to see if the samples are clustered well.
 #               3. a) Line graph per each cytokine. The x-axis is time points and the y-axis is
-#                     cytokine level. Color the graphs based on Asthma/IV vs IV, so that we can
-#                     distinguish them in the plot.
+#                     cytokine level. Color the graphs based on Asthma/IV vs IV (plus all the
+#                     possible comparisons), so that we can distinguish them in the plot.
 #                  b) Line graph per each cytokine. Take mean/median of each time point and compare
-#                     Asthma/IV vs IV. There would be only two lines in each graph.
+#                     Asthma/IV vs IV (plus all the possible comparisons).
+#                     There would be only two lines in each graph.
 #               4. Statistics table. For each time point, calculate mean/median difference
-#                  between Asthma/IV vs IV, and perform t-test and one-way ANOVA to get p-values.
+#                  between Asthma/IV vs IV (plus all the possible comparisons), and perform
+#                  t-test and one-way ANOVA to get p-values.
 #
 #               * Here, it is not about difference of trends but to know the sense of actual
 #                 difference in cytokine levels in each time point or as a whole. So we
@@ -50,6 +52,10 @@ flu09_analysis1 <- function(data_path="./data/flu09_cytokine.rda",
     install.packages("gridExtra")
     require(gridExtra, quietly = TRUE)
   }
+  if(!require(xlsx, quietly = TRUE)) {
+    install.packages("xlsx")
+    require(xlsx, quietly = TRUE)
+  }
   
   ### load the data
   load(data_path)
@@ -79,7 +85,6 @@ flu09_analysis1 <- function(data_path="./data/flu09_cytokine.rda",
   ### clinical factors to be tested
   ### must be in colnames(cyto_sample)
   factor_list <- c("FLU.Strain.Designation",
-                   "Enrollment.Status",
                    "Age.at.Enrollment",
                    "Race",
                    "Gender",
@@ -161,7 +166,7 @@ flu09_analysis1 <- function(data_path="./data/flu09_cytokine.rda",
   })
   
   
-  ### 1. Explore the data set.
+  ### 1. Explore the data set
   
   ### if discrete: make beeswarm plots
   ### if continous: make correlation plots
@@ -843,31 +848,99 @@ flu09_analysis1 <- function(data_path="./data/flu09_cytokine.rda",
   ### 3. b) Line graph with mean/median for each group
   
   ### make the line graphs
-  for(factor in setdiff(c(factor_list, "IV.Resp"), "Age.at.Enrollment")) {
+  factors <- setdiff(c(factor_list, "IV.Resp"), "Age.at.Enrollment")
+  plot_df_nw_mean <- vector("list", length = length(factors))
+  names(plot_df_nw_mean) <- factors
+  plot_df_nw_median <- vector("list", length = length(factors))
+  names(plot_df_nw_median) <- factors
+  plot_df_ps_mean <- vector("list", length = length(factors))
+  names(plot_df_ps_mean) <- factors
+  plot_df_ps_median <- vector("list", length = length(factors))
+  names(plot_df_ps_median) <- factors
+  for(factor in factors) {
     
     ### create result directory
     outDir <- paste0(output_dir, "3b_Line_Graph/", factor, "/")
     dir.create(path = outDir, showWarnings = FALSE, recursive = TRUE)
     
     ### create mean/median data
-    row_names <- NULL
+    ### set the threshold for "Study.Day" selection
+    ### if there are less than X samples in the category, we will not include that in the analysis
+    sampleNum_threshold <- 5
+    ### NW
+    v1 <- NULL
+    v2 <- NULL
     for(x in unique(plot_df_nw[,factor])) {
-      row_names <- c(row_names, paste0(x, "_", unique(plot_df_nw[which(plot_df_nw[,factor] == x),"Study.Day"])))
-    }
-    plot_df_nw_mean <- data.frame(matrix(0, length(row_names), length(c(th1_cytokines, th2_cytokines))))
-    rownames(plot_df_nw_mean) <- row_names
-    colnames(plot_df_nw_mean) <- c(th1_cytokines, th2_cytokines)
-    plot_df_nw_median <- data.frame(matrix(0, length(row_names), length(c(th1_cytokines, th2_cytokines))))
-    rownames(plot_df_nw_median) <- row_names
-    colnames(plot_df_nw_median) <- c(th1_cytokines, th2_cytokines)
-    for(x in unique(plot_df_nw[,factor])) {
-      for(y in unique(plot_df_nw[which(plot_df_nw[,factor] == x),"Study.Day"])) {
-        plot_df_nw_mean[paste0(x, "_", y),] <- apply(plot_df_nw[intersect(which(),
-                                                                          which()),
-                                                                c(th1_cytokines, th2_cytokines)], 2, sum)
+      y <- unique(plot_df_nw[which(plot_df_nw[,factor] == x),"Study.Day"])
+      for(z in y) {
+        if(length(intersect(which(plot_df_nw[,factor] == x),
+                            which(plot_df_nw[,"Study.Day"] == z))) >= sampleNum_threshold) {
+          v1 <- c(v1, x)
+          v2 <- c(v2, z)
+        }
       }
     }
-    
+    row_names <- paste(v1, v2, sep = "_")
+    plot_df_nw_mean[[factor]] <- data.frame(matrix(0, length(row_names), length(c(th1_cytokines, th2_cytokines))))
+    rownames(plot_df_nw_mean[[factor]]) <- row_names
+    colnames(plot_df_nw_mean[[factor]]) <- c(th1_cytokines, th2_cytokines)
+    plot_df_nw_median[[factor]] <- data.frame(matrix(0, length(row_names), length(c(th1_cytokines, th2_cytokines))))
+    rownames(plot_df_nw_median[[factor]]) <- row_names
+    colnames(plot_df_nw_median[[factor]]) <- c(th1_cytokines, th2_cytokines)
+    for(x in unique(plot_df_nw[,factor])) {
+      y <- unique(plot_df_nw[which(plot_df_nw[,factor] == x),"Study.Day"])
+      for(z in y) {
+        w <- intersect(which(plot_df_nw[,factor] == x),
+                       which(plot_df_nw[,"Study.Day"] == z))
+        if(length(w) >= sampleNum_threshold) {
+          plot_df_nw_mean[[factor]][paste0(x, "_", z),] <- apply(plot_df_nw[w,
+                                                                  c(th1_cytokines, th2_cytokines)], 2, mean, na.rm=TRUE)
+          plot_df_nw_median[[factor]][paste0(x, "_", z),] <- apply(plot_df_nw[w,
+                                                                    c(th1_cytokines, th2_cytokines)], 2, median, na.rm=TRUE)
+        }
+      }
+    }
+    plot_df_nw_mean[[factor]] <- data.frame(plot_df_nw_mean[[factor]],v1, v2, stringsAsFactors = FALSE, check.names = FALSE)
+    colnames(plot_df_nw_mean[[factor]])[(ncol(plot_df_nw_mean[[factor]])-1):ncol(plot_df_nw_mean[[factor]])] <- c(factor, "Study.Day")
+    plot_df_nw_median[[factor]] <- data.frame(plot_df_nw_median[[factor]],v1, v2, stringsAsFactors = FALSE, check.names = FALSE)
+    colnames(plot_df_nw_median[[factor]])[(ncol(plot_df_nw_median[[factor]])-1):ncol(plot_df_nw_median[[factor]])] <- c(factor, "Study.Day")
+    ### Plasma
+    v1 <- NULL
+    v2 <- NULL
+    for(x in unique(plot_df_ps[,factor])) {
+      y <- unique(plot_df_ps[which(plot_df_ps[,factor] == x),"Study.Day"])
+      for(z in y) {
+        if(length(intersect(which(plot_df_ps[,factor] == x),
+                            which(plot_df_ps[,"Study.Day"] == z))) >= sampleNum_threshold) {
+          v1 <- c(v1, x)
+          v2 <- c(v2, z)
+        }
+      }
+    }
+    row_names <- paste(v1, v2, sep = "_")
+    plot_df_ps_mean[[factor]] <- data.frame(matrix(0, length(row_names), length(c(th1_cytokines, th2_cytokines))))
+    rownames(plot_df_ps_mean[[factor]]) <- row_names
+    colnames(plot_df_ps_mean[[factor]]) <- c(th1_cytokines, th2_cytokines)
+    plot_df_ps_median[[factor]] <- data.frame(matrix(0, length(row_names), length(c(th1_cytokines, th2_cytokines))))
+    rownames(plot_df_ps_median[[factor]]) <- row_names
+    colnames(plot_df_ps_median[[factor]]) <- c(th1_cytokines, th2_cytokines)
+    for(x in unique(plot_df_ps[,factor])) {
+      y <- unique(plot_df_ps[which(plot_df_ps[,factor] == x),"Study.Day"])
+      for(z in y) {
+        w <- intersect(which(plot_df_ps[,factor] == x),
+                       which(plot_df_ps[,"Study.Day"] == z))
+        if(length(w) >= sampleNum_threshold) {
+          plot_df_ps_mean[[factor]][paste0(x, "_", z),] <- apply(plot_df_ps[w,
+                                                                  c(th1_cytokines, th2_cytokines)], 2, mean, na.rm=TRUE)
+          plot_df_ps_median[[factor]][paste0(x, "_", z),] <- apply(plot_df_ps[w,
+                                                                    c(th1_cytokines, th2_cytokines)], 2, median, na.rm=TRUE)
+        }
+      }
+    }
+    plot_df_ps_mean[[factor]] <- data.frame(plot_df_ps_mean[[factor]],v1, v2, stringsAsFactors = FALSE, check.names = FALSE)
+    colnames(plot_df_ps_mean[[factor]])[(ncol(plot_df_ps_mean[[factor]])-1):ncol(plot_df_ps_mean[[factor]])] <- c(factor, "Study.Day")
+    plot_df_ps_median[[factor]] <- data.frame(plot_df_ps_median[[factor]],v1, v2, stringsAsFactors = FALSE, check.names = FALSE)
+    colnames(plot_df_ps_median[[factor]])[(ncol(plot_df_ps_median[[factor]])-1):ncol(plot_df_ps_median[[factor]])] <- c(factor, "Study.Day")
     
     ### NW
     
@@ -875,23 +948,341 @@ flu09_analysis1 <- function(data_path="./data/flu09_cytokine.rda",
     p <- vector("list", length = length(th1_cytokines))
     names(p) <- th1_cytokines
     
-    ### line graph per cytokine
+    ### line graph per cytokine - mean
     for(cytokine in th1_cytokines) {
-      p[[cytokine]] <- ggplot(plot_df_nw, aes_string(x="Study.Day", y=cytokine, group="ID")) +
+      p[[cytokine]] <- ggplot(plot_df_nw_mean[[factor]], aes_string(x="Study.Day", y=cytokine, group=factor)) +
+        geom_point(aes_string(color=factor), size=1.5, alpha=0.5) +
         geom_line(aes_string(color=factor), size=1.5, alpha=0.5) +
         theme_classic(base_size = 16)
     }
     
     ### arrange the plots and print out
-    fName <- paste0("Line_Plot_NW_TH1_", factor)
+    fName <- paste0("Line_Plot_NW_TH1_Mean_", factor)
     g <- arrangeGrob(grobs = p,
                      layout_matrix = rbind(c(1, 2, 3, 4), c(5, 6, 7, 8), c(9, 10, 11, 12)),
+                     top = fName)
+    ggsave(file = paste0(outDir, fName, ".png"), g, width = 24, height = 12)
+    
+    ### line graph per cytokine - median
+    for(cytokine in th1_cytokines) {
+      p[[cytokine]] <- ggplot(plot_df_nw_median[[factor]], aes_string(x="Study.Day", y=cytokine, group=factor)) +
+        geom_point(aes_string(color=factor), size=1.5, alpha=0.5) +
+        geom_line(aes_string(color=factor), size=1.5, alpha=0.5) +
+        theme_classic(base_size = 16)
+    }
+    
+    ### arrange the plots and print out
+    fName <- paste0("Line_Plot_NW_TH1_Median_", factor)
+    g <- arrangeGrob(grobs = p,
+                     layout_matrix = rbind(c(1, 2, 3, 4), c(5, 6, 7, 8), c(9, 10, 11, 12)),
+                     top = fName)
+    ggsave(file = paste0(outDir, fName, ".png"), g, width = 24, height = 12)
+    
+    ### TH2 cytokines only
+    p <- vector("list", length = length(th2_cytokines))
+    names(p) <- th2_cytokines
+    
+    ### line graph per cytokine - mean
+    for(cytokine in th2_cytokines) {
+      p[[cytokine]] <- ggplot(plot_df_nw_mean[[factor]], aes_string(x="Study.Day", y=cytokine, group=factor)) +
+        geom_point(aes_string(color=factor), size=1.5, alpha=0.5) +
+        geom_line(aes_string(color=factor), size=1.5, alpha=0.5) +
+        theme_classic(base_size = 16)
+    }
+    
+    ### arrange the plots and print out
+    fName <- paste0("Line_Plot_NW_TH2_Mean_", factor)
+    g <- arrangeGrob(grobs = p,
+                     layout_matrix = rbind(c(1, 2, 3), c(4, 5, 6), c(7, 8, 9)),
+                     top = fName)
+    ggsave(file = paste0(outDir, fName, ".png"), g, width = 24, height = 12)
+    
+    ### line graph per cytokine - median
+    for(cytokine in th2_cytokines) {
+      p[[cytokine]] <- ggplot(plot_df_nw_median[[factor]], aes_string(x="Study.Day", y=cytokine, group=factor)) +
+        geom_point(aes_string(color=factor), size=1.5, alpha=0.5) +
+        geom_line(aes_string(color=factor), size=1.5, alpha=0.5) +
+        theme_classic(base_size = 16)
+    }
+    
+    ### arrange the plots and print out
+    fName <- paste0("Line_Plot_NW_TH2_Median_", factor)
+    g <- arrangeGrob(grobs = p,
+                     layout_matrix = rbind(c(1, 2, 3), c(4, 5, 6), c(7, 8, 9)),
+                     top = fName)
+    ggsave(file = paste0(outDir, fName, ".png"), g, width = 24, height = 12)
+    
+    ### Plasma
+    
+    ### TH1 cytokines only
+    p <- vector("list", length = length(th1_cytokines))
+    names(p) <- th1_cytokines
+    
+    ### line graph per cytokine - mean
+    for(cytokine in th1_cytokines) {
+      p[[cytokine]] <- ggplot(plot_df_ps_mean[[factor]], aes_string(x="Study.Day", y=cytokine, group=factor)) +
+        geom_point(aes_string(color=factor), size=1.5, alpha=0.5) +
+        geom_line(aes_string(color=factor), size=1.5, alpha=0.5) +
+        theme_classic(base_size = 16)
+    }
+    
+    ### arrange the plots and print out
+    fName <- paste0("Line_Plot_PS_TH1_Mean_", factor)
+    g <- arrangeGrob(grobs = p,
+                     layout_matrix = rbind(c(1, 2, 3, 4), c(5, 6, 7, 8), c(9, 10, 11, 12)),
+                     top = fName)
+    ggsave(file = paste0(outDir, fName, ".png"), g, width = 24, height = 12)
+    
+    ### line graph per cytokine - median
+    for(cytokine in th1_cytokines) {
+      p[[cytokine]] <- ggplot(plot_df_ps_median[[factor]], aes_string(x="Study.Day", y=cytokine, group=factor)) +
+        geom_point(aes_string(color=factor), size=1.5, alpha=0.5) +
+        geom_line(aes_string(color=factor), size=1.5, alpha=0.5) +
+        theme_classic(base_size = 16)
+    }
+    
+    ### arrange the plots and print out
+    fName <- paste0("Line_Plot_PS_TH1_Median_", factor)
+    g <- arrangeGrob(grobs = p,
+                     layout_matrix = rbind(c(1, 2, 3, 4), c(5, 6, 7, 8), c(9, 10, 11, 12)),
+                     top = fName)
+    ggsave(file = paste0(outDir, fName, ".png"), g, width = 24, height = 12)
+    
+    ### TH2 cytokines only
+    p <- vector("list", length = length(th2_cytokines))
+    names(p) <- th2_cytokines
+    
+    ### line graph per cytokine - mean
+    for(cytokine in th2_cytokines) {
+      p[[cytokine]] <- ggplot(plot_df_ps_mean[[factor]], aes_string(x="Study.Day", y=cytokine, group=factor)) +
+        geom_point(aes_string(color=factor), size=1.5, alpha=0.5) +
+        geom_line(aes_string(color=factor), size=1.5, alpha=0.5) +
+        theme_classic(base_size = 16)
+    }
+    
+    ### arrange the plots and print out
+    fName <- paste0("Line_Plot_PS_TH2_Mean_", factor)
+    g <- arrangeGrob(grobs = p,
+                     layout_matrix = rbind(c(1, 2, 3), c(4, 5, 6), c(7, 8, 9)),
+                     top = fName)
+    ggsave(file = paste0(outDir, fName, ".png"), g, width = 24, height = 12)
+    
+    ### line graph per cytokine - median
+    for(cytokine in th2_cytokines) {
+      p[[cytokine]] <- ggplot(plot_df_ps_median[[factor]], aes_string(x="Study.Day", y=cytokine, group=factor)) +
+        geom_point(aes_string(color=factor), size=1.5, alpha=0.5) +
+        geom_line(aes_string(color=factor), size=1.5, alpha=0.5) +
+        theme_classic(base_size = 16)
+    }
+    
+    ### arrange the plots and print out
+    fName <- paste0("Line_Plot_PS_TH2_Median_", factor)
+    g <- arrangeGrob(grobs = p,
+                     layout_matrix = rbind(c(1, 2, 3), c(4, 5, 6), c(7, 8, 9)),
                      top = fName)
     ggsave(file = paste0(outDir, fName, ".png"), g, width = 24, height = 12)
     
   }
   
   
+  ### 4. Statistics table
   
+  ### In each factor and in each possible pair, make the statistics table
+  factors <- setdiff(c(factor_list, "IV.Resp"), "Age.at.Enrollment")
+  for(factor in factors) {
     
+    ### create result directory
+    outDir <- paste0(output_dir, "4_Statistics_Table/", factor, "/")
+    dir.create(path = outDir, showWarnings = FALSE, recursive = TRUE)
+    
+    ### NW
+    
+    ### make all possible pairs in the factor group
+    unique_vals <- unique(plot_df_nw_mean[[factor]][,factor])
+    factor_pairs <- matrix("", choose(length(unique_vals), 2), 2)
+    cnt <- 1
+    for(i in 1:(length(unique_vals)-1)) {
+      for(j in (i+1):length(unique_vals)) {
+        factor_pairs[cnt,1] <- unique_vals[i]
+        factor_pairs[cnt,2] <- unique_vals[j]
+        cnt <- cnt + 1
+      }
+    }
+    
+    ### factor pairs for Excel
+    ### if factor == IV.Resp, we need to change the group names for Excel file
+    if(factor == "IV.Resp") {
+      ### / -> _
+      unique_vals <- sapply(unique_vals, function(x) {
+        y <- paste(strsplit(paste0(" ", x, " "), split = "/", fixed = TRUE)[[1]], collapse = "_")
+        return(substr(y, 2, nchar(y)-1))
+      })
+      
+      factor_pairs_xls <- matrix("", choose(length(unique_vals), 2), 2)
+      cnt <- 1
+      for(i in 1:(length(unique_vals)-1)) {
+        for(j in (i+1):length(unique_vals)) {
+          factor_pairs_xls[cnt,1] <- unique_vals[i]
+          factor_pairs_xls[cnt,2] <- unique_vals[j]
+          cnt <- cnt + 1
+        }
+      }
+    } else {
+      factor_pairs_xls <- factor_pairs
+    }
+    
+    ### for each pair
+    wb <- createWorkbook()
+    for(i in 1:nrow(factor_pairs)) {
+      
+      ### create an empty matrix
+      specific_study_days <- intersect(unique(plot_df_nw_mean[[factor]][which(plot_df_nw_mean[[factor]][,factor] == factor_pairs[i,1]),"Study.Day"]),
+                                       unique(plot_df_nw_mean[[factor]][which(plot_df_nw_mean[[factor]][,factor] == factor_pairs[i,2]),"Study.Day"]))
+      specific_study_days <- as.character(specific_study_days[order(specific_study_days)])
+      mat <- data.frame(matrix(NA, 4*length(c(th1_cytokines, th2_cytokines)), length(specific_study_days)),
+                        stringsAsFactors = FALSE, check.names = FALSE)
+      rownames(mat) <- c(sapply(c(th1_cytokines, th2_cytokines), function(x) {
+        return(paste0(x, "_", c("Mean_Difference", "Median_Difference", "t-test_Pval", "ANOVA_Pval")))
+      }))
+      colnames(mat) <- specific_study_days
+      
+      for(cytokine in c(th1_cytokines, th2_cytokines)) {
+        for(study_day in specific_study_days) {
+          ### fill out the mean/median differences
+          mat[paste0(cytokine, "_Mean_Difference"),study_day] <- plot_df_nw_mean[[factor]][paste0(factor_pairs[i,1], "_", study_day),cytokine] - plot_df_nw_mean[[factor]][paste0(factor_pairs[i,2], "_", study_day),cytokine]
+          mat[paste0(cytokine, "_Median_Difference"),study_day] <- plot_df_nw_median[[factor]][paste0(factor_pairs[i,1], "_", study_day),cytokine] - plot_df_nw_median[[factor]][paste0(factor_pairs[i,2], "_", study_day),cytokine]
+        
+          ### t-test
+          a <- plot_df_nw[intersect(which(plot_df_nw[,factor] == factor_pairs[i,1]),
+                                    which(plot_df_nw[,"Study.Day"] == as.numeric(study_day))),cytokine]
+          b <- plot_df_nw[intersect(which(plot_df_nw[,factor] == factor_pairs[i,2]),
+                                    which(plot_df_nw[,"Study.Day"] == as.numeric(study_day))),cytokine]
+          mat[paste0(cytokine, "_t-test_Pval"),study_day] <- t.test(a,b)$p.value
+          
+          ### ANOVA
+          c <- data.frame(cytokine_level=c(a, b), group=c(rep("a", length(a)), rep("b", length(b))),
+                          stringsAsFactors = FALSE, check.names = FALSE)
+          mat[paste0(cytokine, "_ANOVA_Pval"),study_day] <- anova(lm(cytokine_level~group,data=c))$"Pr(>F)"[1]
+        }
+      }
+      
+      ### Excel file
+      sheet <- createSheet(wb, paste(factor_pairs_xls[i,1], "vs", factor_pairs_xls[i,2]))
+      addDataFrame(mat, sheet = sheet)
+      
+      ### p-values smaller than 0.05 - red
+      cellStyle <- CellStyle(wb) +
+        Fill(foregroundColor="red",
+             pattern="SOLID_FOREGROUND")
+      ### indicies for < 0.05
+      ind <- which(mat[grep("Pval", rownames(mat)),] < 0.05, arr.ind = TRUE)
+      if(nrow(ind) > 0) {
+        ind[,1] <- ind[,1]*2 + ind[,1] %% 2
+        ### set red
+        for(j in 1:nrow(ind)) {
+          setCellStyle(getCells(getRows(sheet, rowIndex = ind[j,1]+1))[[ind[j,2]+1]], cellStyle = cellStyle)
+        }
+      }
+      
+    }
+    
+    ### save the workbook
+    saveWorkbook(wb, paste0(outDir, "Statistics_Table_NW_", factor, ".xlsx"))
+    
+    ### Plasma
+    
+    ### make all possible pairs in the factor group
+    unique_vals <- unique(plot_df_ps_mean[[factor]][,factor])
+    factor_pairs <- matrix("", choose(length(unique_vals), 2), 2)
+    cnt <- 1
+    for(i in 1:(length(unique_vals)-1)) {
+      for(j in (i+1):length(unique_vals)) {
+        factor_pairs[cnt,1] <- unique_vals[i]
+        factor_pairs[cnt,2] <- unique_vals[j]
+        cnt <- cnt + 1
+      }
+    }
+    
+    ### factor pairs for Excel
+    ### if factor == IV.Resp, we need to change the group names for Excel file
+    if(factor == "IV.Resp") {
+      ### / -> _
+      unique_vals <- sapply(unique_vals, function(x) {
+        y <- paste(strsplit(paste0(" ", x, " "), split = "/", fixed = TRUE)[[1]], collapse = "_")
+        return(substr(y, 2, nchar(y)-1))
+      })
+      
+      factor_pairs_xls <- matrix("", choose(length(unique_vals), 2), 2)
+      cnt <- 1
+      for(i in 1:(length(unique_vals)-1)) {
+        for(j in (i+1):length(unique_vals)) {
+          factor_pairs_xls[cnt,1] <- unique_vals[i]
+          factor_pairs_xls[cnt,2] <- unique_vals[j]
+          cnt <- cnt + 1
+        }
+      }
+    } else {
+      factor_pairs_xls <- factor_pairs
+    }
+    
+    ### for each pair
+    wb <- createWorkbook()
+    for(i in 1:nrow(factor_pairs)) {
+      
+      ### create an empty matrix
+      specific_study_days <- intersect(unique(plot_df_ps_mean[[factor]][which(plot_df_ps_mean[[factor]][,factor] == factor_pairs[i,1]),"Study.Day"]),
+                                       unique(plot_df_ps_mean[[factor]][which(plot_df_ps_mean[[factor]][,factor] == factor_pairs[i,2]),"Study.Day"]))
+      specific_study_days <- as.character(specific_study_days[order(specific_study_days)])
+      mat <- data.frame(matrix(NA, 4*length(c(th1_cytokines, th2_cytokines)), length(specific_study_days)),
+                        stringsAsFactors = FALSE, check.names = FALSE)
+      rownames(mat) <- c(sapply(c(th1_cytokines, th2_cytokines), function(x) {
+        return(paste0(x, "_", c("Mean_Difference", "Median_Difference", "t-test_Pval", "ANOVA_Pval")))
+      }))
+      colnames(mat) <- specific_study_days
+      
+      for(cytokine in c(th1_cytokines, th2_cytokines)) {
+        for(study_day in specific_study_days) {
+          ### fill out the mean/median differences
+          mat[paste0(cytokine, "_Mean_Difference"),study_day] <- plot_df_ps_mean[[factor]][paste0(factor_pairs[i,1], "_", study_day),cytokine] - plot_df_ps_mean[[factor]][paste0(factor_pairs[i,2], "_", study_day),cytokine]
+          mat[paste0(cytokine, "_Median_Difference"),study_day] <- plot_df_ps_median[[factor]][paste0(factor_pairs[i,1], "_", study_day),cytokine] - plot_df_ps_median[[factor]][paste0(factor_pairs[i,2], "_", study_day),cytokine]
+          
+          ### t-test
+          a <- plot_df_ps[intersect(which(plot_df_ps[,factor] == factor_pairs[i,1]),
+                                    which(plot_df_ps[,"Study.Day"] == as.numeric(study_day))),cytokine]
+          b <- plot_df_ps[intersect(which(plot_df_ps[,factor] == factor_pairs[i,2]),
+                                    which(plot_df_ps[,"Study.Day"] == as.numeric(study_day))),cytokine]
+          mat[paste0(cytokine, "_t-test_Pval"),study_day] <- t.test(a,b)$p.value
+          
+          ### ANOVA
+          c <- data.frame(cytokine_level=c(a, b), group=c(rep("a", length(a)), rep("b", length(b))),
+                          stringsAsFactors = FALSE, check.names = FALSE)
+          mat[paste0(cytokine, "_ANOVA_Pval"),study_day] <- anova(lm(cytokine_level~group,data=c))$"Pr(>F)"[1]
+        }
+      }
+      
+      ### Excel file
+      sheet <- createSheet(wb, paste(factor_pairs_xls[i,1], "vs", factor_pairs_xls[i,2]))
+      addDataFrame(mat, sheet = sheet)
+      
+      ### p-values smaller than 0.05 - red
+      cellStyle <- CellStyle(wb) +
+        Fill(foregroundColor="red",
+             pattern="SOLID_FOREGROUND")
+      ### indicies for < 0.05
+      ind <- which(mat[grep("Pval", rownames(mat)),] < 0.05, arr.ind = TRUE)
+      if(nrow(ind) > 0) {
+        ind[,1] <- ind[,1]*2 + ind[,1] %% 2
+        ### set red
+        for(j in 1:nrow(ind)) {
+          setCellStyle(getCells(getRows(sheet, rowIndex = ind[j,1]+1))[[ind[j,2]+1]], cellStyle = cellStyle)
+        }
+      }
+      
+    }
+    
+    ### save the workbook
+    saveWorkbook(wb, paste0(outDir, "Statistics_Table_PS_", factor, ".xlsx"))
+    
+  }
+  
 }

@@ -1165,7 +1165,7 @@ flu09_analysis1 <- function(data_path="./data/flu09_cytokine.rda",
         Fill(foregroundColor="red",
              pattern="SOLID_FOREGROUND")
       ### indicies for < 0.05
-      ind <- which(mat[grep("Pval", rownames(mat)),] < 0.05, arr.ind = TRUE)
+      ind <- which(mat[grep("Pval", rownames(mat)),,drop=FALSE] < 0.05, arr.ind = TRUE)
       if(nrow(ind) > 0) {
         ind[,1] <- ind[,1]*2 + ind[,1] %% 2
         ### set red

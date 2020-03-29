@@ -1,6 +1,6 @@
 ###
 #   File name : Analysis1.R
-#   Author    : Hyunjin Kim
+#   Author    : Hyunjin Kim 
 #   Date      : Mar 23, 2020
 #   Email     : hyunjin.kim@stjude.org
 #   Purpose   : First analysis of the Mohamed's flu09 data.

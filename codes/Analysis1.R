@@ -155,6 +155,11 @@ flu09_analysis1 <- function(data_path="./data/flu09_cytokine.rda",
     }
   }
   
+  ### add new column - Age.over.50
+  plot_df_nw$Age.over.50 <- "FALSE"
+  plot_df_nw$Age.over.50[plot_df_nw$Age.at.Enrollment >= 50] <- "TRUE"
+  plot_df_ps$Age.over.50 <- "FALSE"
+  plot_df_ps$Age.over.50[plot_df_ps$Age.at.Enrollment >= 50] <- "TRUE"
   
   ### 1. Explore the data set
   
@@ -669,7 +674,7 @@ flu09_analysis1 <- function(data_path="./data/flu09_cytokine.rda",
   ### 3. a) Line graph with all the samples
   
   ### make the line graphs
-  for(factor in setdiff(c(factor_list, "IV.Resp"), "Age.at.Enrollment")) {
+  for(factor in setdiff(c(factor_list, "IV.Resp", "Age.over.50"), "Age.at.Enrollment")) {
     
     ### create result directory
     outDir <- paste0(output_dir, "3a_Line_Graph/", factor, "/")
@@ -838,7 +843,7 @@ flu09_analysis1 <- function(data_path="./data/flu09_cytokine.rda",
   ### 3. b) Line graph with mean/median for each group
   
   ### make the line graphs
-  factors <- setdiff(c(factor_list, "IV.Resp"), "Age.at.Enrollment")
+  factors <- setdiff(c(factor_list, "IV.Resp", "Age.over.50"), "Age.at.Enrollment")
   plot_df_nw_mean <- vector("list", length = length(factors))
   names(plot_df_nw_mean) <- factors
   plot_df_nw_median <- vector("list", length = length(factors))
@@ -1078,7 +1083,7 @@ flu09_analysis1 <- function(data_path="./data/flu09_cytokine.rda",
   ### 4. Statistics table
   
   ### In each factor and in each possible pair, make the statistics table
-  factors <- setdiff(c(factor_list, "IV.Resp"), "Age.at.Enrollment")
+  factors <- setdiff(c(factor_list, "IV.Resp", "Age.over.50"), "Age.at.Enrollment")
   for(factor in factors) {
     
     ### create result directory

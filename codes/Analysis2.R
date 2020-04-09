@@ -364,6 +364,9 @@ flu09_analysis2 <- function(data_path="./data/flu09_cytokine.rda",
   
   ### 2. Line graph per each cytokine + p-value + standard error
   
+  ### option for 95% confidence level
+  is_conf_lvl <- FALSE
+  
   ### make the line graphs
   factors <- setdiff(c(factor_list, "IV.Resp", "Age.over.50"), "Age.at.Enrollment")
   plot_df_nw_mean <- vector("list", length = length(factors))
@@ -575,15 +578,10 @@ flu09_analysis2 <- function(data_path="./data/flu09_cytokine.rda",
     
     ### line graph per cytokine - mean
     for(cytokine in th1_cytokines) {
+      top <- ""
       p[[cytokine]] <- ggplot(plot_df_nw_mean[[factor]], aes_string(x="Study.Day", y=cytokine, group=factor)) +
         geom_point(aes_string(color=factor), size=4, alpha=0.5) +
         geom_line(aes_string(color=factor), size=2, alpha=0.5) +
-        geom_errorbar(aes_string(ymin=paste0(cytokine, "-1.96*", cytokine, "_sem"),
-                                 ymax=paste0(cytokine, "+1.96*", cytokine, "_sem"),
-                                 color=factor),
-                      width=1,
-                      alpha=1,
-                      position=position_dodge(0.3)) +
         theme_classic(base_size = 16)
       
       ### if there are comparisons that have significant p-values show them in the plot
@@ -598,20 +596,26 @@ flu09_analysis2 <- function(data_path="./data/flu09_cytokine.rda",
             p[[cytokine]] <- p[[cytokine]] +
               geom_point(x = as.numeric(col), y = temp[1], col = "black", size = 4, shape = 1) +
               geom_point(x = as.numeric(col), y = temp[2], col = "black", size = 4, shape = 1)
-            ### add p-value
-            if(temp[1] >= temp[2]) {
-              p[[cytokine]] <- p[[cytokine]] +
-                geom_text(x = as.numeric(col), y = temp[1]*1.2,
-                              label = paste(comparison, signif(pv, digits = 2)),
-                          col = "black", size = 3, check_overlap = TRUE)
-            } else {
-              p[[cytokine]] <- p[[cytokine]] +
-                geom_text(x = as.numeric(col), y = temp[2]*1.2,
-                              label = paste(comparison, signif(pv, digits = 2)),
-                          col = "black", size = 3, check_overlap = TRUE)
-            }
+            ### add p-value to the top
+            top <- paste(top, comparison, "|", col, "Day |", signif(pv, digits = 2), "\n")
           }
         }
+      }
+      
+      ### attach top label to the ggplot
+      p[[cytokine]] <- p[[cytokine]] +
+        ggtitle(label = top) +
+        theme(plot.title = element_text(size = 10, hjust=0.5))
+      
+      ### if 95% confidence level is TRUE,
+      if(is_conf_lvl) {
+        p[[cytokine]] <- p[[cytokine]] +
+          geom_errorbar(aes_string(ymin=paste0(cytokine, "-1.96*", cytokine, "_sem"),
+                                   ymax=paste0(cytokine, "+1.96*", cytokine, "_sem"),
+                                   color=factor),
+                        width=1,
+                        alpha=1,
+                        position=position_dodge(0.3))
       }
     }
     
@@ -628,15 +632,10 @@ flu09_analysis2 <- function(data_path="./data/flu09_cytokine.rda",
     
     ### line graph per cytokine - mean
     for(cytokine in th2_cytokines) {
+      top <- ""
       p[[cytokine]] <- ggplot(plot_df_nw_mean[[factor]], aes_string(x="Study.Day", y=cytokine, group=factor)) +
         geom_point(aes_string(color=factor), size=4, alpha=0.5) +
         geom_line(aes_string(color=factor), size=2, alpha=0.5) +
-        geom_errorbar(aes_string(ymin=paste0(cytokine, "-1.96*", cytokine, "_sem"),
-                                 ymax=paste0(cytokine, "+1.96*", cytokine, "_sem"),
-                                 color=factor),
-                      width=1,
-                      alpha=1,
-                      position=position_dodge(0.3)) +
         theme_classic(base_size = 16)
       
       ### if there are comparisons that have significant p-values show them in the plot
@@ -651,20 +650,26 @@ flu09_analysis2 <- function(data_path="./data/flu09_cytokine.rda",
             p[[cytokine]] <- p[[cytokine]] +
               geom_point(x = as.numeric(col), y = temp[1], col = "black", size = 4, shape = 1) +
               geom_point(x = as.numeric(col), y = temp[2], col = "black", size = 4, shape = 1)
-            ### add p-value
-            if(temp[1] >= temp[2]) {
-              p[[cytokine]] <- p[[cytokine]] +
-                geom_text(x = as.numeric(col), y = temp[1]*1.2,
-                              label = paste(comparison, signif(pv, digits = 2)),
-                          col = "black", size = 3, check_overlap = TRUE)
-            } else {
-              p[[cytokine]] <- p[[cytokine]] +
-                geom_text(x = as.numeric(col), y = temp[2]*1.2,
-                              label = paste(comparison, signif(pv, digits = 2)),
-                          col = "black", size = 3, check_overlap = TRUE)
-            }
+            ### add p-value to the top
+            top <- paste(top, comparison, "|", col, "Day |", signif(pv, digits = 2), "\n")
           }
         }
+      }
+      
+      ### attach top label to the ggplot
+      p[[cytokine]] <- p[[cytokine]] +
+        ggtitle(label = top) +
+        theme(plot.title = element_text(size = 10, hjust=0.5))
+      
+      ### if 95% confidence level is TRUE,
+      if(is_conf_lvl) {
+        p[[cytokine]] <- p[[cytokine]] +
+          geom_errorbar(aes_string(ymin=paste0(cytokine, "-1.96*", cytokine, "_sem"),
+                                   ymax=paste0(cytokine, "+1.96*", cytokine, "_sem"),
+                                   color=factor),
+                        width=1,
+                        alpha=1,
+                        position=position_dodge(0.3))
       }
     }
     
@@ -684,15 +689,10 @@ flu09_analysis2 <- function(data_path="./data/flu09_cytokine.rda",
     
     ### line graph per cytokine - mean
     for(cytokine in th1_cytokines) {
+      top <- ""
       p[[cytokine]] <- ggplot(plot_df_ps_mean[[factor]], aes_string(x="Study.Day", y=cytokine, group=factor)) +
         geom_point(aes_string(color=factor), size=4, alpha=0.5) +
         geom_line(aes_string(color=factor), size=2, alpha=0.5) +
-        geom_errorbar(aes_string(ymin=paste0(cytokine, "-1.96*", cytokine, "_sem"),
-                                 ymax=paste0(cytokine, "+1.96*", cytokine, "_sem"),
-                                 color=factor),
-                      width=1,
-                      alpha=1,
-                      position=position_dodge(0.3)) +
         theme_classic(base_size = 16)
       
       ### if there are comparisons that have significant p-values show them in the plot
@@ -707,20 +707,26 @@ flu09_analysis2 <- function(data_path="./data/flu09_cytokine.rda",
             p[[cytokine]] <- p[[cytokine]] +
               geom_point(x = as.numeric(col), y = temp[1], col = "black", size = 4, shape = 1) +
               geom_point(x = as.numeric(col), y = temp[2], col = "black", size = 4, shape = 1)
-            ### add p-value
-            if(temp[1] >= temp[2]) {
-              p[[cytokine]] <- p[[cytokine]] +
-                geom_text(x = as.numeric(col), y = temp[1]*1.2,
-                              label = paste(comparison, signif(pv, digits = 2)),
-                          col = "black", size = 3, check_overlap = TRUE)
-            } else {
-              p[[cytokine]] <- p[[cytokine]] +
-                geom_text(x = as.numeric(col), y = temp[2]*1.2,
-                              label = paste(comparison, signif(pv, digits = 2)),
-                          col = "black", size = 3, check_overlap = TRUE)
-            }
+            ### add p-value to the top
+            top <- paste(top, comparison, "|", col, "Day |", signif(pv, digits = 2), "\n")
           }
         }
+      }
+      
+      ### attach top label to the ggplot
+      p[[cytokine]] <- p[[cytokine]] +
+        ggtitle(label = top) +
+        theme(plot.title = element_text(size = 10, hjust=0.5))
+      
+      ### if 95% confidence level is TRUE,
+      if(is_conf_lvl) {
+        p[[cytokine]] <- p[[cytokine]] +
+          geom_errorbar(aes_string(ymin=paste0(cytokine, "-1.96*", cytokine, "_sem"),
+                                   ymax=paste0(cytokine, "+1.96*", cytokine, "_sem"),
+                                   color=factor),
+                        width=1,
+                        alpha=1,
+                        position=position_dodge(0.3))
       }
     }
     
@@ -737,15 +743,10 @@ flu09_analysis2 <- function(data_path="./data/flu09_cytokine.rda",
     
     ### line graph per cytokine - mean
     for(cytokine in th2_cytokines) {
+      top <- ""
       p[[cytokine]] <- ggplot(plot_df_ps_mean[[factor]], aes_string(x="Study.Day", y=cytokine, group=factor)) +
         geom_point(aes_string(color=factor), size=4, alpha=0.5) +
         geom_line(aes_string(color=factor), size=2, alpha=0.5) +
-        geom_errorbar(aes_string(ymin=paste0(cytokine, "-1.96*", cytokine, "_sem"),
-                                 ymax=paste0(cytokine, "+1.96*", cytokine, "_sem"),
-                                 color=factor),
-                      width=1,
-                      alpha=1,
-                      position=position_dodge(0.3)) +
         theme_classic(base_size = 16)
       
       ### if there are comparisons that have significant p-values show them in the plot
@@ -760,20 +761,26 @@ flu09_analysis2 <- function(data_path="./data/flu09_cytokine.rda",
             p[[cytokine]] <- p[[cytokine]] +
               geom_point(x = as.numeric(col), y = temp[1], col = "black", size = 4, shape = 1) +
               geom_point(x = as.numeric(col), y = temp[2], col = "black", size = 4, shape = 1)
-            ### add p-value
-            if(temp[1] >= temp[2]) {
-              p[[cytokine]] <- p[[cytokine]] +
-                geom_text(x = as.numeric(col), y = temp[1]*1.2,
-                              label = paste(comparison, signif(pv, digits = 2)),
-                          col = "black", size = 3, check_overlap = TRUE)
-            } else {
-              p[[cytokine]] <- p[[cytokine]] +
-                geom_text(x = as.numeric(col), y = temp[2]*1.2,
-                              label = paste(comparison, signif(pv, digits = 2)),
-                          col = "black", size = 3, check_overlap = TRUE)
-            }
+            ### add p-value to the top
+            top <- paste(top, comparison, "|", col, "Day |", signif(pv, digits = 2), "\n")
           }
         }
+      }
+      
+      ### attach top label to the ggplot
+      p[[cytokine]] <- p[[cytokine]] +
+        ggtitle(label = top) +
+        theme(plot.title = element_text(size = 10, hjust=0.5))
+      
+      ### if 95% confidence level is TRUE,
+      if(is_conf_lvl) {
+        p[[cytokine]] <- p[[cytokine]] +
+          geom_errorbar(aes_string(ymin=paste0(cytokine, "-1.96*", cytokine, "_sem"),
+                                   ymax=paste0(cytokine, "+1.96*", cytokine, "_sem"),
+                                   color=factor),
+                        width=1,
+                        alpha=1,
+                        position=position_dodge(0.3))
       }
     }
     
@@ -787,5 +794,152 @@ flu09_analysis2 <- function(data_path="./data/flu09_cytokine.rda",
   }
   
   
+  ### 3. Comparing cytokine levels between Age >= 50 vs Age < 50
+  
+  ### create result directory
+  outDir <- paste0(output_dir, "3_Age_Cytokine_level/")
+  dir.create(path = outDir, showWarnings = FALSE, recursive = TRUE)
+  
+  ### Function to produce summary statistics (mean and +/- sd)
+  data_summary <- function(x) {
+    m <- mean(x)
+    ymin <- m-sd(x)
+    ymax <- m+sd(x)
+    return(c(y=m,ymin=ymin,ymax=ymax))
+  }
+  
+  ### NW
+  ### TH1 cytokines plot
+  p <- vector("list", length = length(th1_cytokines))
+  names(p) <- th1_cytokines
+  
+  ### box plot per cytokine
+  for(cytokine in th1_cytokines) {
+    means <- aggregate(as.formula(paste0(cytokine, "~", "Age.over.50")), plot_df_nw, mean)
+    min_v <- min(plot_df_nw[,cytokine], na.rm = TRUE)
+    max_v <- max(plot_df_nw[,cytokine], na.rm = TRUE)
+    means[,cytokine] <- paste0("Mean: ", signif(as.numeric(means[,cytokine]), digits = 5))
+    lbl <- sapply(levels(as.factor(plot_df_nw$Age.over.50)), function(x) {
+      return(length(intersect(which(plot_df_nw[,"Age.over.50"] == x),
+                              which(!is.na(plot_df_nw[,cytokine])))))
+    })
+    lbl <- paste0(levels(as.factor(plot_df_nw$Age.over.50)),
+                  paste0("(n=", lbl, ")"))
+    p[[cytokine]] <- ggplot(plot_df_nw, aes_string(x="Age.over.50", y=cytokine)) +
+      geom_boxplot(na.rm = TRUE) +
+      stat_compare_means(na.rm = TRUE) +
+      geom_text(data = means, aes_string(label = cytokine, y = min_v-(max_v*0.05))) +
+      scale_x_discrete(labels = lbl) +
+      theme_classic(base_size = 16) +
+      theme(legend.title = element_text(size=10),
+            legend.text = element_text(size=8))
+  }
+  
+  ### arrange the plots and print out
+  fName <- paste0("Box_Plot_NW_TH1_", "Age.over.50")
+  g <- arrangeGrob(grobs = p,
+                   layout_matrix = rbind(c(1, 2, 3, 4), c(5, 6, 7, 8), c(9, 10, 11, 12)),
+                   top = fName)
+  ggsave(file = paste0(outDir, fName, ".png"), g, width = 22, height = 12)
+  
+  ### TH2 cytokines plot
+  p <- vector("list", length = length(th2_cytokines))
+  names(p) <- th2_cytokines
+  
+  ### box plot per cytokine
+  for(cytokine in th2_cytokines) {
+    means <- aggregate(as.formula(paste0(cytokine, "~", "Age.over.50")), plot_df_nw, mean)
+    min_v <- min(plot_df_nw[,cytokine], na.rm = TRUE)
+    max_v <- max(plot_df_nw[,cytokine], na.rm = TRUE)
+    means[,cytokine] <- paste0("Mean: ", signif(as.numeric(means[,cytokine]), digits = 5))
+    lbl <- sapply(levels(as.factor(plot_df_nw$Age.over.50)), function(x) {
+      return(length(intersect(which(plot_df_nw[,"Age.over.50"] == x),
+                              which(!is.na(plot_df_nw[,cytokine])))))
+    })
+    lbl <- paste0(levels(as.factor(plot_df_nw$Age.over.50)),
+                  paste0("(n=", lbl, ")"))
+    p[[cytokine]] <- ggplot(plot_df_nw, aes_string(x="Age.over.50", y=cytokine)) +
+      geom_boxplot(na.rm = TRUE) +
+      stat_compare_means(na.rm = TRUE) +
+      geom_text(data = means, aes_string(label = cytokine, y = min_v-(max_v*0.05))) +
+      scale_x_discrete(labels = lbl) +
+      theme_classic(base_size = 16) +
+      theme(legend.title = element_text(size=10),
+            legend.text = element_text(size=8))
+  }
+  
+  ### arrange the plots and print out
+  fName <- paste0("Box_Plot_NW_TH2_", "Age.over.50")
+  g <- arrangeGrob(grobs = p,
+                   layout_matrix = rbind(c(1, 2, 3), c(4, 5, 6), c(7, 8, 9)),
+                   top = fName)
+  ggsave(file = paste0(outDir, fName, ".png"), g, width = 22, height = 12)
+  
+  ### Plasma
+  ### TH1 cytokines plot
+  p <- vector("list", length = length(th1_cytokines))
+  names(p) <- th1_cytokines
+  
+  ### box plot per cytokine
+  for(cytokine in th1_cytokines) {
+    means <- aggregate(as.formula(paste0(cytokine, "~", "Age.over.50")), plot_df_ps, mean)
+    min_v <- min(plot_df_ps[,cytokine], na.rm = TRUE)
+    max_v <- max(plot_df_ps[,cytokine], na.rm = TRUE)
+    means[,cytokine] <- paste0("Mean: ", signif(as.numeric(means[,cytokine]), digits = 5))
+    lbl <- sapply(levels(as.factor(plot_df_ps$Age.over.50)), function(x) {
+      return(length(intersect(which(plot_df_ps[,"Age.over.50"] == x),
+                              which(!is.na(plot_df_ps[,cytokine])))))
+    })
+    lbl <- paste0(levels(as.factor(plot_df_ps$Age.over.50)),
+                  paste0("(n=", lbl, ")"))
+    p[[cytokine]] <- ggplot(plot_df_ps, aes_string(x="Age.over.50", y=cytokine)) +
+      geom_boxplot(na.rm = TRUE) +
+      stat_compare_means(na.rm = TRUE) +
+      geom_text(data = means, aes_string(label = cytokine, y = min_v-(max_v*0.05))) +
+      scale_x_discrete(labels = lbl) +
+      theme_classic(base_size = 16) +
+      theme(legend.title = element_text(size=10),
+            legend.text = element_text(size=8))
+  }
+  
+  ### arrange the plots and print out
+  fName <- paste0("Box_Plot_PS_TH1_", "Age.over.50")
+  g <- arrangeGrob(grobs = p,
+                   layout_matrix = rbind(c(1, 2, 3, 4), c(5, 6, 7, 8), c(9, 10, 11, 12)),
+                   top = fName)
+  ggsave(file = paste0(outDir, fName, ".png"), g, width = 22, height = 12)
+  
+  ### TH2 cytokines plot
+  p <- vector("list", length = length(th2_cytokines))
+  names(p) <- th2_cytokines
+  
+  ### box plot per cytokine
+  for(cytokine in th2_cytokines) {
+    means <- aggregate(as.formula(paste0(cytokine, "~", "Age.over.50")), plot_df_ps, mean)
+    min_v <- min(plot_df_ps[,cytokine], na.rm = TRUE)
+    max_v <- max(plot_df_ps[,cytokine], na.rm = TRUE)
+    means[,cytokine] <- paste0("Mean: ", signif(as.numeric(means[,cytokine]), digits = 5))
+    lbl <- sapply(levels(as.factor(plot_df_ps$Age.over.50)), function(x) {
+      return(length(intersect(which(plot_df_ps[,"Age.over.50"] == x),
+                              which(!is.na(plot_df_ps[,cytokine])))))
+    })
+    lbl <- paste0(levels(as.factor(plot_df_ps$Age.over.50)),
+                  paste0("(n=", lbl, ")"))
+    p[[cytokine]] <- ggplot(plot_df_ps, aes_string(x="Age.over.50", y=cytokine)) +
+      geom_boxplot(na.rm = TRUE) +
+      stat_compare_means(na.rm = TRUE) +
+      geom_text(data = means, aes_string(label = cytokine, y = min_v-(max_v*0.05))) +
+      scale_x_discrete(labels = lbl) +
+      theme_classic(base_size = 16) +
+      theme(legend.title = element_text(size=10),
+            legend.text = element_text(size=8))
+  }
+  
+  ### arrange the plots and print out
+  fName <- paste0("Box_Plot_PS_TH2_", "Age.over.50")
+  g <- arrangeGrob(grobs = p,
+                   layout_matrix = rbind(c(1, 2, 3), c(4, 5, 6), c(7, 8, 9)),
+                   top = fName)
+  ggsave(file = paste0(outDir, fName, ".png"), g, width = 22, height = 12)
   
 }

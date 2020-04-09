@@ -29,10 +29,6 @@ flu09_analysis3 <- function(data_path="./data/flu09_cytokine.rda",
     install.packages("ggbeeswarm")
     require(ggbeeswarm, quietly = TRUE)
   }
-  if(!require(ggpubr, quietly = TRUE)) {
-    install.packages("ggpubr")
-    require(ggpubr, quietly = TRUE)
-  }
   if(!require(gridExtra, quietly = TRUE)) {
     install.packages("gridExtra")
     require(gridExtra, quietly = TRUE)
@@ -140,9 +136,88 @@ flu09_analysis3 <- function(data_path="./data/flu09_cytokine.rda",
   plot_df_ps$Age.over.50[plot_df_ps$Age.at.Enrollment >= 50] <- "TRUE"
   
   
+  ### 1. pie charts
   
+  ### create result directory
+  outDir <- paste0(output_dir, "1_Pie_Chart/")
+  dir.create(path = outDir, showWarnings = FALSE, recursive = TRUE)
   
+  ### NW
+  ### create an analysis-ready data for the pie charts
+  pie_data <- vector("list", length = length(unique(plot_df_nw$IV.Resp)))
+  names(pie_data) <- unique(plot_df_nw$IV.Resp)
+  for(group in unique(plot_df_nw$IV.Resp)) {
+    pie_data[[group]] <- data.frame(Age.over.50=c("FALSE", "TRUE"),
+                                    n=c(length(intersect(which(plot_df_nw$IV.Resp == group),
+                                                         which(plot_df_nw$Age.over.50 == "FALSE"))),
+                                        length(intersect(which(plot_df_nw$IV.Resp == group),
+                                                         which(plot_df_nw$Age.over.50 == "TRUE")))),
+                                    stringsAsFactors = FALSE, check.names = FALSE)
+  }
   
+  ### get pie charts
+  p <- vector("list", length = length(unique(plot_df_nw$IV.Resp)))
+  names(p) <- unique(plot_df_nw$IV.Resp)
+  for(group in unique(plot_df_nw$IV.Resp)) {
+    total_sample_num <- sum(pie_data[[group]]$n)
+    pct <- sapply(pie_data[[group]]$n, function(x) signif(x*100/total_sample_num, digits = 3))
+    pct <- paste0(pie_data[[group]]$n, "(", pct, "%)")
+    p[[group]] <- ggplot(data = pie_data[[group]], aes(x = "", y = n, fill = Age.over.50)) +
+      geom_bar(stat = "identity", width = 1) +
+      coord_polar(theta="y") +
+      geom_text(label = pct, position = position_stack(vjust = 0.5), size = 6) +
+      labs(x = NULL, y = NULL, title = group) +
+      theme_classic(base_size = 16) +
+      theme(plot.title = element_text(hjust = 0.5, color = "black"),
+            axis.line = element_blank(),
+            axis.ticks = element_blank())
+  }
   
-    
+  ### arrange the plots and print out
+  fName <- paste0("Pie_Chart_NW_IV.Resp_Age")
+  g <- arrangeGrob(grobs = p,
+                   nrow = 2,
+                   ncol = 2,
+                   top = fName)
+  ggsave(file = paste0(outDir, fName, ".png"), g, width = 15, height = 9, dpi = 300)
+  
+  ### PS
+  ### create an analysis-ready data for the pie charts
+  pie_data <- vector("list", length = length(unique(plot_df_ps$IV.Resp)))
+  names(pie_data) <- unique(plot_df_ps$IV.Resp)
+  for(group in unique(plot_df_ps$IV.Resp)) {
+    pie_data[[group]] <- data.frame(Age.over.50=c("FALSE", "TRUE"),
+                                    n=c(length(intersect(which(plot_df_ps$IV.Resp == group),
+                                                         which(plot_df_ps$Age.over.50 == "FALSE"))),
+                                        length(intersect(which(plot_df_ps$IV.Resp == group),
+                                                         which(plot_df_ps$Age.over.50 == "TRUE")))),
+                                    stringsAsFactors = FALSE, check.names = FALSE)
+  }
+  
+  ### get pie charts
+  p <- vector("list", length = length(unique(plot_df_ps$IV.Resp)))
+  names(p) <- unique(plot_df_ps$IV.Resp)
+  for(group in unique(plot_df_ps$IV.Resp)) {
+    total_sample_num <- sum(pie_data[[group]]$n)
+    pct <- sapply(pie_data[[group]]$n, function(x) signif(x*100/total_sample_num, digits = 3))
+    pct <- paste0(pie_data[[group]]$n, "(", pct, "%)")
+    p[[group]] <- ggplot(data = pie_data[[group]], aes(x = "", y = n, fill = Age.over.50)) +
+      geom_bar(stat = "identity", width = 1) +
+      coord_polar(theta="y") +
+      geom_text(label = pct, position = position_stack(vjust = 0.5), size = 6) +
+      labs(x = NULL, y = NULL, title = group) +
+      theme_classic(base_size = 16) +
+      theme(plot.title = element_text(hjust = 0.5, color = "black"),
+            axis.line = element_blank(),
+            axis.ticks = element_blank())
+  }
+  
+  ### arrange the plots and print out
+  fName <- paste0("Pie_Chart_PS_IV.Resp_Age")
+  g <- arrangeGrob(grobs = p,
+                   nrow = 2,
+                   ncol = 2,
+                   top = fName)
+  ggsave(file = paste0(outDir, fName, ".png"), g, width = 15, height = 9, dpi = 300)
+  
 }

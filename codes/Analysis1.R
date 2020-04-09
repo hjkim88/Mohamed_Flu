@@ -120,6 +120,10 @@ flu09_analysis1 <- function(data_path="./data/flu09_cytokine.rda",
   ### N/A -> NA in Tobacco.Use
   plot_df[which(plot_df[,"Tobacco.Use"] == "N/A"),"Tobacco.Use"] <- "NA"
   
+  ### add new column - Age.over.50
+  plot_df$Age.over.50 <- "FALSE"
+  plot_df$Age.over.50[plot_df$Age.at.Enrollment >= 50] <- "TRUE"
+  
   ### annotate clinical info to the cytokine level data
   plot_df_nw <- merge(cyto_nw[,c("ID", "Study.Day", th1_cytokines, th2_cytokines)], plot_df,
                       by.x = "ID", by.y = "row.names")
@@ -155,17 +159,11 @@ flu09_analysis1 <- function(data_path="./data/flu09_cytokine.rda",
     }
   }
   
-  ### add new column - Age.over.50
-  plot_df_nw$Age.over.50 <- "FALSE"
-  plot_df_nw$Age.over.50[plot_df_nw$Age.at.Enrollment >= 50] <- "TRUE"
-  plot_df_ps$Age.over.50 <- "FALSE"
-  plot_df_ps$Age.over.50[plot_df_ps$Age.at.Enrollment >= 50] <- "TRUE"
-  
   ### 1. Explore the data set
   
   ### if discrete: make beeswarm plots
   ### if continous: make correlation plots
-  for(factor in c(factor_list, "IV.Resp")) {
+  for(factor in c(factor_list, "IV.Resp", "Age.over.50")) {
     
     ### create result directory
     outDir <- paste0(output_dir, "1_Explore/", factor, "/")
@@ -632,7 +630,7 @@ flu09_analysis1 <- function(data_path="./data/flu09_cytokine.rda",
   }
   
   ### make PCA plots
-  for(factor in setdiff(c(factor_list, "Study.Day", "IV.Resp"), "Age.at.Enrollment")) {
+  for(factor in setdiff(c(factor_list, "Study.Day", "IV.Resp", "Age.over.50"), "Age.at.Enrollment")) {
     
     ### create result directory
     outDir <- paste0(output_dir, "2_PCA/", factor, "/")
